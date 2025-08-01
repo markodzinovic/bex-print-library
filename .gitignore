@@ -1,6 +1,26 @@
+# Node modules
 node_modules/
+
+# Android build files
 android/.gradle/
 android/build/
+
+# Android local config
+android/local.properties
+
+# Android Studio files
+android/.idea/
+
+# Example app folders
 example/android/.gradle/
 example/android/build/
 example/node_modules/
+
+# macOS system files (ako koristiš macOS)
+.DS_Store
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
