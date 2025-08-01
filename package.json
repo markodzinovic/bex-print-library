@@ -1,12 +1,21 @@
 {
   "name": "bex-print-library",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.js",
+  "types": "typings/index.d.ts",
   "react-native": {
     "android": "./android"
   },
-  "keywords": ["react-native", "native-module"],
+  "keywords": [
+    "react-native",
+    "native-module"
+  ],
   "peerDependencies": {
     "react-native": ">=0.72.0"
-  }
+  },
+  "files": [
+    "android/",
+    "index.js",
+    "typings/"
+  ]
 }
