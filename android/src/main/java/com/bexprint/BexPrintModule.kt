@@ -4,12 +4,9 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.content.pm.PackageManager
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import com.facebook.react.bridge.*
-import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.bridge.ReactContextBaseJavaModule
-import com.facebook.react.bridge.ReactMethod
 
 class BexPrintModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
@@ -27,7 +24,7 @@ class BexPrintModule(reactContext: ReactApplicationContext) :
             // Nije potrebno za permisije, ostavi prazno
         }
 
-        override fun onRequestPermissionsResult(
+        fun onRequestPermissionsResult(
             requestCode: Int,
             permissions: Array<out String>,
             grantResults: IntArray
@@ -138,17 +135,32 @@ class BexPrintModule(reactContext: ReactApplicationContext) :
     @SuppressLint("MissingPermission")
     @ReactMethod
     fun listPairedDevices(promise: Promise) {
-        if (!hasBluetoothPermission()) {
-            requestBluetoothPermission(promise)
-            return
-        }
-
         if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
             promise.reject("BT_DISABLED", "Bluetooth is not enabled")
             return
         }
 
         val deviceNames = bluetoothAdapter.bondedDevices.map { it.name }
-        promise.resolve(Arguments.fromList(deviceNames))
+        promise.resolve(deviceNames)  // direktno šalješ listu, RN je može prihvatiti
+    }
+
+    @SuppressLint("MissingPermission")
+    @ReactMethod
+    fun listPairedDevicesWithAddress(promise: Promise) {
+        if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
+            promise.reject("BT_DISABLED", "Bluetooth is not enabled")
+            return
+        }
+
+        val deviceArray: WritableArray = Arguments.createArray()
+
+        for (device in bluetoothAdapter.bondedDevices) {
+            val map: WritableMap = Arguments.createMap()
+            map.putString("name", device.name)
+            map.putString("address", device.address)
+            deviceArray.pushMap(map)
+        }
+
+        promise.resolve(deviceArray)
     }
 }
