@@ -4,13 +4,15 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.content.pm.PackageManager
-import androidx.core.content.ContextCompat
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.*
-import com.facebook.react.modules.core.PermissionListener
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
 
 class BexPrintModule(reactContext: ReactApplicationContext) :
-    ReactContextBaseJavaModule(reactContext), PermissionListener {
+    ReactContextBaseJavaModule(reactContext) {
 
     companion object {
         const val PERMISSION_REQUEST_CODE = 1234
@@ -20,16 +22,29 @@ class BexPrintModule(reactContext: ReactApplicationContext) :
     private var connectionManager: BluetoothConnectionManager? = null
     private var permissionPromise: Promise? = null
 
-    init {
-        reactContext.addActivityEventListener(object : BaseActivityEventListener() {
-            override fun onRequestPermissionsResult(
-                requestCode: Int,
-                permissions: Array<out String>?,
-                grantResults: IntArray?
-            ) {
-                this@BexPrintModule.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    private val activityEventListener = object : ActivityEventListener {
+        override fun onActivityResult(activityRequestCode: Int, resultCode: Int, data: android.content.Intent?) {
+            // Nije potrebno za permisije, ostavi prazno
+        }
+
+        override fun onRequestPermissionsResult(
+            requestCode: Int,
+            permissions: Array<out String>,
+            grantResults: IntArray
+        ) {
+            if (requestCode == PERMISSION_REQUEST_CODE) {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    permissionPromise?.resolve(true)
+                } else {
+                    permissionPromise?.reject("PERMISSION_DENIED", "Bluetooth permission denied")
+                }
+                permissionPromise = null
             }
-        })
+        }
+    }
+
+    init {
+        reactContext.addActivityEventListener(activityEventListener)
     }
 
     override fun getName(): String = "BexPrintModule"
@@ -39,7 +54,6 @@ class BexPrintModule(reactContext: ReactApplicationContext) :
         return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
             ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
         } else {
-            // Pre Android 12 dovoljne su manifest dozvole
             true
         }
     }
@@ -50,36 +64,18 @@ class BexPrintModule(reactContext: ReactApplicationContext) :
             return
         }
 
-        permissionPromise = promise
-
         val activity = currentActivity
         if (activity == null) {
             promise.reject("NO_ACTIVITY", "No current activity found")
             return
         }
 
+        permissionPromise = promise
         ActivityCompat.requestPermissions(
             activity,
             arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
             PERMISSION_REQUEST_CODE
         )
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>?,
-        grantResults: IntArray?
-    ): Boolean {
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            if (grantResults != null && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                permissionPromise?.resolve(true)
-            } else {
-                permissionPromise?.reject("PERMISSION_DENIED", "Bluetooth permission denied")
-            }
-            permissionPromise = null
-            return true
-        }
-        return false
     }
 
     @ReactMethod
@@ -107,7 +103,6 @@ class BexPrintModule(reactContext: ReactApplicationContext) :
         }
 
         connectionManager?.disconnect()
-
         connectionManager = BluetoothConnectionManager(device)
 
         if (connectionManager?.connect() == true) {
