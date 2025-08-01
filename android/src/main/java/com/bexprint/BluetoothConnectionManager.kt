@@ -17,7 +17,7 @@ class BluetoothConnectionManager(private val device: BluetoothDevice) {
     private var socket: BluetoothSocket? = null
     private var outputStream: OutputStream? = null
 
-    @SuppressLint("MissingPermission")
+    @SuppressLint("MissingPermission", "LongLogTag")
     fun connect(): Boolean {
         return try {
             adapter?.cancelDiscovery()
@@ -34,7 +34,7 @@ class BluetoothConnectionManager(private val device: BluetoothDevice) {
         }
     }
 
-    @SuppressLint("MissingPermission")
+    @SuppressLint("MissingPermission", "LongLogTag")
     fun disconnect() {
         try {
             outputStream?.close()
